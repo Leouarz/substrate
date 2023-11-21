@@ -1117,9 +1117,9 @@ impl<T: Config> BondedPool<T> {
 		let balance_after_unbond = {
 			let new_depositor_points =
 				target_member.active_points().saturating_sub(unbonding_points);
-			log::info!("target_member.active_points: {:?}", target_member.active_points);
+			log::info!("target_member.active_points: {:?}", target_member.active_points());
 			log::info!("unbonding_points: {:?}", unbonding_points);
-			log::info!("target_member.active_points().saturating_sub: {:?}", new_depositor_points);
+			log::info!("target_member.active_points().saturating_sub(unbonding_points): {:?}", new_depositor_points);
 			let mut target_member_after_unbond = (*target_member).clone();
 			target_member_after_unbond.points = new_depositor_points;
 			target_member_after_unbond.active_balance()

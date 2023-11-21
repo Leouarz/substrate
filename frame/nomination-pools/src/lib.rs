@@ -2815,6 +2815,7 @@ impl<T: Config> Pallet<T> {
 
 		log::info!("u256(current_balance): {:?}", u256(current_balance));
 		log::info!("u256(points): {:?}", u256(points));
+		log::info!("u256(current_balance).saturating_mul(u256(points)): {:?}", u256(current_balance).saturating_mul(u256(points)));
 		log::info!("balance(u256(current_balance).saturating_mul(u256(points))): {:?}", balance(u256(current_balance).saturating_mul(u256(points))));
 		log::info!("balance(u256(current_balance).saturating_mul(u256(points))).div(current_points): {:?}", balance(u256(current_balance).saturating_mul(u256(points))).div(current_points));
 

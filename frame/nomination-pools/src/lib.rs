@@ -528,6 +528,7 @@ impl<T: Config> PoolMember<T> {
 	/// This is derived from the ratio of points in the pool to which the member belongs to.
 	/// Might return different values based on the pool state for the same member and points.
 	fn active_balance(&self) -> BalanceOf<T> {
+		log::info!("pool member: {:?}", self);
 		if let Some(pool) = BondedPool::<T>::get(self.pool_id).defensive() {
 			pool.points_to_balance(self.points)
 		} else {
@@ -962,6 +963,9 @@ impl<T: Config> BondedPool<T> {
 	fn points_to_balance(&self, points: BalanceOf<T>) -> BalanceOf<T> {
 		let bonded_balance =
 			T::Staking::active_stake(&self.bonded_account()).unwrap_or(Zero::zero());
+		log::info!("points_to_balance bonded_balance : {:?}", bonded_balance);
+		log::info!("points_to_balance self.points : {:?}", self.points);
+		log::info!("points_to_balance points : {:?}", points);
 		Pallet::<T>::point_to_balance(bonded_balance, self.points, points)
 	}
 
@@ -1117,9 +1121,9 @@ impl<T: Config> BondedPool<T> {
 		let balance_after_unbond = {
 			let new_depositor_points =
 				target_member.active_points().saturating_sub(unbonding_points);
-			log::info!("target_member.active_points: {:?}", target_member.active_points());
+			log::info!("active_points: {:?}", target_member.active_points());
 			log::info!("unbonding_points: {:?}", unbonding_points);
-			log::info!("target_member.active_points().saturating_sub(unbonding_points): {:?}", new_depositor_points);
+			log::info!("new_depositor_points: {:?}", new_depositor_points);
 			let mut target_member_after_unbond = (*target_member).clone();
 			target_member_after_unbond.points = new_depositor_points;
 			target_member_after_unbond.active_balance()
@@ -1133,9 +1137,6 @@ impl<T: Config> BondedPool<T> {
 			Error::<T>::PartialUnbondNotAllowedPermissionlessly
 		);
 
-		log::info!("Pallet::<T>::depositor_min_bond(): {:?}", Pallet::<T>::depositor_min_bond());
-		log::info!("MinJoinBond::<T>::get(): {:?}", MinJoinBond::<T>::get());
-
 		// any unbond must comply with the balance condition:
 		ensure!(
 			is_full_unbond ||
@@ -1147,8 +1148,6 @@ impl<T: Config> BondedPool<T> {
 					},
 			Error::<T>::MinimumBondNotMet
 		);
-
-		log::info!("AAAAAAAA");
 
 		// additional checks:
 		match (is_permissioned, is_depositor) {
@@ -2023,14 +2022,11 @@ pub mod pallet {
 			member_account: AccountIdLookupOf<T>,
 			#[pallet::compact] unbonding_points: BalanceOf<T>,
 		) -> DispatchResult {
-			log::info!("NOMINATION POOL A");
 			let who = ensure_signed(origin)?;
 			let member_account = T::Lookup::lookup(member_account)?;
 			let (mut member, mut bonded_pool, mut reward_pool) =
 				Self::get_member_with_pools(&member_account)?;
-			log::info!("NOMINATION POOL B");
 			bonded_pool.ok_to_unbond_with(&who, &member_account, &member, unbonding_points)?;
-			log::info!("NOMINATION POOL C");
 			// Claim the the payout prior to unbonding. Once the user is unbonding their points no
 			// longer exist in the bonded pool and thus they can no longer claim their payouts. It
 			// is not strictly necessary to claim the rewards, but we do it here for UX.
@@ -2047,8 +2043,6 @@ pub mod pallet {
 			// Unbond in the actual underlying nominator.
 			let unbonding_balance = bonded_pool.dissolve(unbonding_points);
 			T::Staking::unbond(&bonded_pool.bonded_account(), unbonding_balance)?;
-
-			log::info!("NOMINATION POOL D");
 
 			// Note that we lazily create the unbonding pools here if they don't already exist
 			let mut sub_pools = SubPoolsStorage::<T>::get(member.pool_id)
@@ -2075,12 +2069,8 @@ pub mod pallet {
 				.defensive_ok_or::<Error<T>>(DefensiveError::PoolNotFound.into())?
 				.issue(unbonding_balance);
 
-			log::info!("NOMINATION POOL E");
-
 			// Try and unbond in the member map.
 			member.try_unbond(unbonding_points, points_unbonded, unbond_era)?;
-
-			log::info!("NOMINATION POOL F");
 
 			Self::deposit_event(Event::<T>::Unbonded {
 				member: member_account.clone(),
@@ -2820,6 +2810,9 @@ impl<T: Config> Pallet<T> {
 		}
 
 		// Equivalent of (current_balance / current_points) * points
+		log::info!("point_to_balance current_balance : {:?}", current_balance);
+		log::info!("point_to_balance current_points : {:?}", current_points);
+		log::info!("point_to_balance points : {:?}", points);
 		balance(u256(current_balance).saturating_mul(u256(points)))
 			// We check for zero above
 			.div(current_points)

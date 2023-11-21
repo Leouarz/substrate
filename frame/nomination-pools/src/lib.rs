@@ -2809,10 +2809,16 @@ impl<T: Config> Pallet<T> {
 			return Zero::zero()
 		}
 
-		// Equivalent of (current_balance / current_points) * points
 		log::info!("point_to_balance current_balance : {:?}", current_balance);
 		log::info!("point_to_balance current_points : {:?}", current_points);
 		log::info!("point_to_balance points : {:?}", points);
+
+		log::info!("u256(current_balance): {:?}", u256(current_balance));
+		log::info!("u256(points): {:?}", u256(points));
+		log::info!("balance(u256(current_balance).saturating_mul(u256(points))): {:?}", balance(u256(current_balance).saturating_mul(u256(points))));
+		log::info!("balance(u256(current_balance).saturating_mul(u256(points))).div(current_points): {:?}", balance(u256(current_balance).saturating_mul(u256(points))).div(current_points));
+
+		// Equivalent of (current_balance / current_points) * points
 		balance(u256(current_balance).saturating_mul(u256(points)))
 			// We check for zero above
 			.div(current_points)

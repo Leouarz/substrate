@@ -566,6 +566,9 @@ impl<T: Config> PoolMember<T> {
 		points_issued: BalanceOf<T>,
 		unbonding_era: EraIndex,
 	) -> Result<(), Error<T>> {
+		log::info!("NOMINATION POOL 1");
+		log::info!("self.points: {:?}", self.points);
+		log::info!("points_dissolved: {:?}", points_dissolved);
 		if let Some(new_points) = self.points.checked_sub(&points_dissolved) {
 			match self.unbonding_eras.get_mut(&unbonding_era) {
 				Some(already_unbonding_points) =>
@@ -2006,13 +2009,14 @@ pub mod pallet {
 			member_account: AccountIdLookupOf<T>,
 			#[pallet::compact] unbonding_points: BalanceOf<T>,
 		) -> DispatchResult {
+			log::info!("NOMINATION POOL A");
 			let who = ensure_signed(origin)?;
 			let member_account = T::Lookup::lookup(member_account)?;
 			let (mut member, mut bonded_pool, mut reward_pool) =
 				Self::get_member_with_pools(&member_account)?;
-
+			log::info!("NOMINATION POOL B");
 			bonded_pool.ok_to_unbond_with(&who, &member_account, &member, unbonding_points)?;
-
+			log::info!("NOMINATION POOL C");
 			// Claim the the payout prior to unbonding. Once the user is unbonding their points no
 			// longer exist in the bonded pool and thus they can no longer claim their payouts. It
 			// is not strictly necessary to claim the rewards, but we do it here for UX.
@@ -2029,6 +2033,8 @@ pub mod pallet {
 			// Unbond in the actual underlying nominator.
 			let unbonding_balance = bonded_pool.dissolve(unbonding_points);
 			T::Staking::unbond(&bonded_pool.bonded_account(), unbonding_balance)?;
+
+			log::info!("NOMINATION POOL D");
 
 			// Note that we lazily create the unbonding pools here if they don't already exist
 			let mut sub_pools = SubPoolsStorage::<T>::get(member.pool_id)
@@ -2055,8 +2061,12 @@ pub mod pallet {
 				.defensive_ok_or::<Error<T>>(DefensiveError::PoolNotFound.into())?
 				.issue(unbonding_balance);
 
+			log::info!("NOMINATION POOL E");
+
 			// Try and unbond in the member map.
 			member.try_unbond(unbonding_points, points_unbonded, unbond_era)?;
+
+			log::info!("NOMINATION POOL F");
 
 			Self::deposit_event(Event::<T>::Unbonded {
 				member: member_account.clone(),
